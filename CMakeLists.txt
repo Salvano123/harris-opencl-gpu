@@ -16,5 +16,11 @@ add_executable(harris_app
 
 target_link_libraries(harris_app PRIVATE ${OpenCL_LIBRARIES} ${OpenCV_LIBS})
 
-# Automatyczne kopiowanie folderu z kernelami do katalogu budowania
+# Program laduje kernels/ wzgledem katalogu roboczego. Kopiuj przy konfiguracji i po kazdym buildzie.
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/kernels DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_command(TARGET harris_app POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/kernels"
+            "$<TARGET_FILE_DIR:harris_app>/kernels"
+    COMMENT "Kopiowanie kerneli OpenCL"
+)

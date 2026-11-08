@@ -26,7 +26,8 @@ public:
     HarrisDetectorCL(const std::string& kernelPath, int maxTileWidth, int maxTileHeight, int gaussRadius = 3);
     ~HarrisDetectorCL();
 
-    // Przetwarza pojedynczy obraz lub kafelek (tile)
+    // Przetwarza pojedynczy obraz lub kafelek (tile).
+    // threshold to bezwzgledny prog odpowiedzi Harrisa, podany z zewnatrz.
     std::vector<Vertex> detect(const unsigned char* grayData, int width, int height, 
                                float k, float threshold, ProfilingData& prof);
 
@@ -54,5 +55,7 @@ private:
 
     void initOpenCL(const std::string& kernelPath);
     void allocateBuffers(float sigma);
+    void enqueueResponse(const unsigned char* grayData, int width, int height, float k,
+                         cl_event& evWrite, cl_event& evSobel, cl_event& evGx, cl_event& evGy);
     static double getEventMs(cl_event evt);
 };

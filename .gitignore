@@ -1,0 +1,58 @@
+# Obrazy wejściowe (duże pliki TIFF)
+*.tif
+*.tiff
+*.TIF
+*.TIFF
+
+# Dokumentacja rozmowy
+*.pdf
+*.PDF
+
+# Tymczasowy ekstrakt PDF
+_pdf_extract.txt
+
+# Podglądy i inne obrazy JPEG (także wielkie litery)
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[jJ][pP][eE]
+wynik_harris.jpg
+
+# Katalog wyników detekcji (jeden JPG na obraz)
+wyniki/
+
+# Katalogi budowania CMake
+build/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeUserPresets.json
+compile_commands.json
+/Makefile
+
+# Skompilowane binaria i pliki pośrednie
+*.exe
+*.obj
+*.o
+*.ilk
+*.pdb
+*.log
+*.tmp
+*.temp
+
+# IDE, edytor, system
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.ncb
+*~
+*.swp
+*.swo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.cache/
