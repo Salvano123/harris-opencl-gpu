@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenCL REQUIRED)
-find_package(OpenCV REQUIRED) # Tylko do wczytywania/zapisu obrazów i wizualizacji
+find_package(OpenCV REQUIRED) # Do wczytywania i wyswietlania obrazow
 
 include_directories(include ${OpenCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 

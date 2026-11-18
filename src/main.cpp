@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -57,13 +56,13 @@ std::vector<Vertex> collectVertices(HarrisDetectorCL& detector, const cv::Mat& f
     return allVertices;
 }
 
-bool writePreview(const cv::Mat& fullImg, const std::vector<Vertex>& vertices, const std::string& path) {
+cv::Mat makePreview(const cv::Mat& fullImg, const std::vector<Vertex>& vertices) {
     cv::Mat outColor;
     cv::cvtColor(fullImg, outColor, cv::COLOR_GRAY2BGR);
     for (const auto& v : vertices) {
-        cv::circle(outColor, cv::Point(v.x, v.y), 3, cv::Scalar(0, 0, 255), -1);
+        cv::circle(outColor, cv::Point(v.x, v.y), 30, cv::Scalar(0, 0, 255), 5);
     }
-    return cv::imwrite(path, outColor);
+    return outColor;
 }
 
 bool parseThreshold(const char* text, float& out) {
@@ -110,14 +109,10 @@ int main(int argc, char** argv) {
     const std::vector<Vertex> allVertices =
         collectVertices(detector, fullImg, tiles, TILE_SIZE, kHarris, threshold, prof);
 
-    const std::filesystem::path outDir = "wyniki";
-    std::filesystem::create_directories(outDir);
-    const std::filesystem::path outPath =
-        outDir / (std::filesystem::path(imgPath).stem().string() + "_harris.jpg");
-    if (!writePreview(fullImg, allVertices, outPath.string())) {
-        std::cerr << "Blad zapisu obrazu: " << outPath.string() << "\n";
-        return -1;
-    }
+    const cv::Mat preview = makePreview(fullImg, allVertices);
+    cv::namedWindow("Harris Detection", cv::WINDOW_NORMAL);
+    cv::imshow("Harris Detection", preview);
+    // cv::imwrite("harris_result.jpg", preview);
 
     std::cout << std::fixed << std::setprecision(3);
     std::cout << "\n=== RAPORT WYDAJNOSCI OPENCL (" << fullW << "x" << fullH << ") ===\n";
@@ -132,6 +127,7 @@ int main(int argc, char** argv) {
     std::cout << "--------------------------------------------\n";
     std::cout << "Laczny czas obliczen GPU: " << prof.totalGpuMs() << " ms\n";
     std::cout << "Wykryto wierzcholkow    : " << allVertices.size() << "\n";
-    std::cout << "Zapisano                : " << outPath.string() << "\n";
+    std::cout << "Nacisnij dowolny klawisz w oknie obrazu, aby zakonczyc.\n";
+    cv::waitKey(0);
     return 0;
 }
