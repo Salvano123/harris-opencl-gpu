@@ -41,7 +41,7 @@ harris_app.exe sciezka\do\obrazu.tif
 harris_app.exe sciezka\do\obrazu.tif 0.02
 ```
 
-Pierwszy argument to obraz. Drugi, opcjonalny, to próg odpowiedzi Harrisa (kropka jako separator dziesiętny). Bez niego program używa stałej `0.02`. Współczynnik k wynosi `0.05`. Próg nie jest wyliczany z obrazu; adaptacyjny dobór progu nie jest zaimplementowany.
+Obraz i próg ustawia się w `src/main.cpp` (`kImagePath`, domyślnie `../BG_0005.tif` względem `build/`, oraz `kThreshold` = `0.02`), a potem uruchamia Play. Argumenty wiersza poleceń nie są używane. Współczynnik k wynosi `0.05`. Próg nie jest wyliczany z obrazu; adaptacyjny dobór progu nie jest zaimplementowany.
 
 Na starcie wypisywane są wszystkie platformy OpenCL i ich urządzenia. Jeśli jest karta NVIDIA, program wybiera ją. W przeciwnym razie bierze inną kartę GPU, a gdy GPU nie ma — dowolne urządzenie.
 

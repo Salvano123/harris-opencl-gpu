@@ -1,8 +1,6 @@
 #include "HarrisDetectorCL.hpp"
 #include <opencv2/opencv.hpp>
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -56,6 +54,23 @@ std::vector<Vertex> collectVertices(HarrisDetectorCL& detector, const cv::Mat& f
     return allVertices;
 }
 
+cv::Mat prepareScan(const cv::Mat& gray) {
+    cv::Mat closed;
+    const cv::Mat closeKernel =
+        cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+    cv::morphologyEx(gray, closed, cv::MORPH_CLOSE, closeKernel);
+
+    cv::Mat leafMask;
+    cv::threshold(closed, leafMask, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+    const cv::Mat growKernel =
+        cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+    cv::dilate(leafMask, leafMask, growKernel);
+
+    closed.setTo(255, leafMask == 0);
+    return closed;
+}
+
 cv::Mat makePreview(const cv::Mat& fullImg, const std::vector<Vertex>& vertices) {
     cv::Mat outColor;
     cv::cvtColor(fullImg, outColor, cv::COLOR_GRAY2BGR);
@@ -65,35 +80,24 @@ cv::Mat makePreview(const cv::Mat& fullImg, const std::vector<Vertex>& vertices)
     return outColor;
 }
 
-bool parseThreshold(const char* text, float& out) {
-    char* end = nullptr;
-    out = std::strtof(text, &end);
-    if (end == text || (end != nullptr && *end != '\0')) return false;
-    return std::isfinite(out) && out >= 0.f;
 }
 
-} // namespace
+const char* kImagePath = "../leaf_02/l2nr001.tif";
+constexpr float kThreshold = 0.02f;
 
-int main(int argc, char** argv) {
-    if (argc < 2 || argc > 3) {
-        std::cerr << "Uzycie: harris_app.exe <obraz> [prog]\n";
-        return 1;
-    }
-
-    const std::string imgPath = argv[1];
-    // Staly prog dobrany recznie (podglad l2nr001). Nie jest liczony z obrazu.
-    constexpr float kDefaultThreshold = 0.02f;
-    float threshold = kDefaultThreshold;
-    if (argc == 3 && !parseThreshold(argv[2], threshold)) {
-        std::cerr << "Niepoprawny prog: " << argv[2] << "\n";
-        return 1;
-    }
+int main() {
+    const std::string imgPath = kImagePath;
+    const float threshold = kThreshold;
 
     cv::Mat fullImg = cv::imread(imgPath, cv::IMREAD_GRAYSCALE);
     if (fullImg.empty()) {
         std::cerr << "Blad wczytywania obrazu: " << imgPath << "\n";
         return -1;
     }
+
+    // Podglad kreslimy na surowym skanie. Detekcja dostaje obraz po filtrze.
+    const cv::Mat sourceForPreview = fullImg.clone();
+    fullImg = prepareScan(fullImg);
 
     const int TILE_SIZE = 2048; // Rozmiar logiczny kafelka
     const int MARGIN = 7;       // Zakładka: 1 (Sobel) + 3 (Gauss) + 3 (NMS)
@@ -109,7 +113,14 @@ int main(int argc, char** argv) {
     const std::vector<Vertex> allVertices =
         collectVertices(detector, fullImg, tiles, TILE_SIZE, kHarris, threshold, prof);
 
-    const cv::Mat preview = makePreview(fullImg, allVertices);
+    const cv::Mat preview = makePreview(sourceForPreview, allVertices);
+    const auto slash = imgPath.find_last_of("/\\");
+    const std::string fileName = imgPath.substr(slash == std::string::npos ? 0 : slash + 1);
+    const auto dot = fileName.find_last_of('.');
+    const std::string stem = fileName.substr(0, dot == std::string::npos ? fileName.size() : dot);
+    if (!cv::imwrite("wyniki/" + stem + "_harris.jpg", preview)) {
+        std::cerr << "Nie zapisano podgladu: wyniki/" << stem << "_harris.jpg\n";
+    }
     cv::namedWindow("Harris Detection", cv::WINDOW_NORMAL);
     cv::imshow("Harris Detection", preview);
     // cv::imwrite("harris_result.jpg", preview);
@@ -127,7 +138,9 @@ int main(int argc, char** argv) {
     std::cout << "--------------------------------------------\n";
     std::cout << "Laczny czas obliczen GPU: " << prof.totalGpuMs() << " ms\n";
     std::cout << "Wykryto wierzcholkow    : " << allVertices.size() << "\n";
-    std::cout << "Nacisnij dowolny klawisz w oknie obrazu, aby zakonczyc.\n";
-    cv::waitKey(0);
+    std::cout << "Nacisnij SPACJE w oknie obrazu, aby zakonczyc.\n";
+    
+    while (cv::waitKey(0) != ' ') {}
+    
     return 0;
 }
