@@ -60,8 +60,30 @@ cv::Mat prepareScan(const cv::Mat& gray) {
         cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::morphologyEx(gray, closed, cv::MORPH_CLOSE, closeKernel);
 
-    cv::Mat leafMask;
-    cv::threshold(closed, leafMask, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+    cv::Mat dark;
+    cv::threshold(closed, dark, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+    cv::Mat labels, stats, centroids;
+    const int componentCount =
+        cv::connectedComponentsWithStats(dark, labels, stats, centroids, 8, CV_32S);
+    cv::Mat leafMask = cv::Mat::zeros(dark.size(), CV_8U);
+    if (componentCount > 1) {
+        int largest = 1;
+        int largestArea = stats.at<int>(1, cv::CC_STAT_AREA);
+        for (int i = 2; i < componentCount; ++i) {
+            const int area = stats.at<int>(i, cv::CC_STAT_AREA);
+            if (area > largestArea) {
+                largestArea = area;
+                largest = i;
+            }
+        }
+        const int minPartArea = std::max(1, static_cast<int>(largestArea * 0.001));
+        for (int i = 1; i < componentCount; ++i) {
+            if (stats.at<int>(i, cv::CC_STAT_AREA) >= minPartArea) {
+                leafMask.setTo(255, labels == i);
+            }
+        }
+    }
 
     const cv::Mat growKernel =
         cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
@@ -82,8 +104,9 @@ cv::Mat makePreview(const cv::Mat& fullImg, const std::vector<Vertex>& vertices)
 
 }
 
-const char* kImagePath = "../leaf_02/l2nr001.tif";
-constexpr float kThreshold = 0.02f;
+const char* kImagePath = "../leaf_02/l2nr002.tif";
+// const char* kImagePath = "../BG_0005_2.tif";
+constexpr float kThreshold = 0.03f;
 
 int main() {
     const std::string imgPath = kImagePath;
@@ -139,8 +162,8 @@ int main() {
     std::cout << "Laczny czas obliczen GPU: " << prof.totalGpuMs() << " ms\n";
     std::cout << "Wykryto wierzcholkow    : " << allVertices.size() << "\n";
     std::cout << "Nacisnij SPACJE w oknie obrazu, aby zakonczyc.\n";
-    
+
     while (cv::waitKey(0) != ' ') {}
-    
+
     return 0;
 }
